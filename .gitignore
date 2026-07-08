@@ -1,0 +1,21 @@
+# Node & React
+node_modules/
+.expo/
+dist/
+build/
+
+# Python
+__pycache__/
+venv/
+env/
+.venv/
+
+# Local Media Uploads (from your Node backend)
+uploads/
+
+# Environment Variables (Keep API keys secret!)
+.env
+
+# Google Cloud / Firebase keys
+zlot-backend/serviceAccountKey.json
+zlot-backend/visionKey.json
