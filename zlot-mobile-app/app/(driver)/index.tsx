@@ -97,6 +97,28 @@ export default function DriverDashboard() {
     return lot.capacity_total || 0;
   };
 
+  const getSpotLabel = (lotId: string, spotNumber: string) => {
+    if (!spotNumber) return 'N/A';
+    const lot = lots.find((l: any) => l.id === lotId);
+    if (lot && lot.spot_layout) {
+      const spot = lot.spot_layout.find((s: any) => s.id === spotNumber);
+      if (spot && spot.label) return spot.label;
+    }
+    if (spotNumber.includes('-')) {
+      const parts = spotNumber.split('-');
+      if (parts.length === 3) {
+        const prefix = parts[0];
+        const index = parseInt(parts[2]);
+        if (!isNaN(index)) {
+          return `${prefix}${index + 1}`;
+        }
+      } else if (parts.length === 2) {
+        return parts.join('');
+      }
+    }
+    return spotNumber;
+  };
+
   const fetchProfile = async () => {
     if (auth.currentUser) {
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -806,17 +828,17 @@ export default function DriverDashboard() {
                 </View>
                 
                 <View style={{flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.2)', padding: 15, borderRadius: 12, marginBottom: 10}}>
-                  <View>
+                  <View style={{flex: 1}}>
                     <Text style={{color: '#e0f2fe', fontSize: 11}}>SPOT</Text>
-                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 18}}>#{booking.spotNumber}</Text>
+                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 18}} numberOfLines={1} ellipsizeMode="tail">#{getSpotLabel(booking.lotId, booking.spotNumber)}</Text>
                   </View>
-                  <View>
+                  <View style={{flex: 1.2, alignItems: 'center'}}>
                     <Text style={{color: '#e0f2fe', fontSize: 11}}>PLATE</Text>
-                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 16}}>{booking.licensePlate}</Text>
+                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 16}} numberOfLines={1} ellipsizeMode="tail">{booking.licensePlate}</Text>
                   </View>
-                  <View style={{alignItems: 'flex-end'}}>
+                  <View style={{flex: 1.5, alignItems: 'flex-end'}}>
                     <Text style={{color: '#e0f2fe', fontSize: 11}}>STATUS</Text>
-                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 14}}>{booking.status}</Text>
+                    <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 14}} numberOfLines={1} ellipsizeMode="tail">{booking.status}</Text>
                   </View>
                 </View>
 
@@ -909,7 +931,7 @@ export default function DriverDashboard() {
                   <View key={tx.id} style={[styles.historyCard, tx.status === 'Active' ? {borderColor: '#3b82f6', borderWidth: 2} : {}]}>
                     <Text style={{fontWeight: '900', fontSize: 18, color: '#0f172a'}}>{displayLotName}</Text>
                     <Text style={{color: '#64748b', fontSize: 12, marginBottom: 10}}>
-                      {displayLocation ? `${displayLocation} • ` : ''}Spot #{tx.spotNumber || 'N/A'}
+                      {displayLocation ? `${displayLocation} • ` : ''}Spot #{getSpotLabel(tx.lotId, tx.spotNumber)}
                     </Text>
                     <View style={styles.divider} />
                     

@@ -296,6 +296,27 @@ export default function OwnerDashboard() {
     setProfileModalVisible(false);
   };
 
+  const getSpotLabel = (spotNumber: string) => {
+    if (!spotNumber) return 'N/A';
+    if (lotData && lotData.spot_layout) {
+      const spot = lotData.spot_layout.find((s: any) => s.id === spotNumber);
+      if (spot && spot.label) return spot.label;
+    }
+    if (spotNumber.includes('-')) {
+      const parts = spotNumber.split('-');
+      if (parts.length === 3) {
+        const prefix = parts[0];
+        const index = parseInt(parts[2]);
+        if (!isNaN(index)) {
+          return `${prefix}${index + 1}`;
+        }
+      } else if (parts.length === 2) {
+        return parts.join('');
+      }
+    }
+    return spotNumber;
+  };
+
   const getRateForVehicle = (type: string) => {
     if (lotData?.vehicle_rates && lotData.vehicle_rates[type]) return lotData.vehicle_rates[type];
     return lotData?.hourly_rate || 100; 
@@ -402,12 +423,14 @@ export default function OwnerDashboard() {
            if(!activeTx.spotNumber || activeTx.spotNumber === "AUTO") activeTx.spotNumber = findFreeSpot(activeTx.vehicleType || 'CAR');
         }
 
+        activeTx.spotNumber = getSpotLabel(activeTx.spotNumber);
+
         setCurrentVehicle(activeTx);
         setIsSpotScheduleVisible(false);
         setVehicleModalVisible(true);
       } else {
         setWalkInVehicleType('CAR'); 
-        setCurrentVehicle({ isNew: true, licensePlate: plate, status: 'Walk-up', spotNumber: findFreeSpot('CAR') });
+        setCurrentVehicle({ isNew: true, licensePlate: plate, status: 'Walk-up', spotNumber: getSpotLabel(findFreeSpot('CAR')) });
         setIsSpotScheduleVisible(false); 
         setVehicleModalVisible(true);
       }
@@ -468,6 +491,14 @@ export default function OwnerDashboard() {
     try {
       let assignedSpotId = currentVehicle.spotNumber;
       let layoutUpdates = lotData.spot_layout ? [...lotData.spot_layout] : [];
+      let spotObj = null;
+
+      if (layoutUpdates.length > 0 && assignedSpotId) {
+        spotObj = layoutUpdates.find(s => s.id === assignedSpotId || s.label === assignedSpotId || s.label?.toUpperCase() === assignedSpotId?.toUpperCase());
+        if (spotObj) {
+          assignedSpotId = spotObj.id;
+        }
+      }
 
       if (currentVehicle.isNew) {
         if (!assignedSpotId || assignedSpotId === "FULL") {
@@ -475,9 +506,8 @@ export default function OwnerDashboard() {
         }
         
         if (layoutUpdates.length > 0) {
-          const spotCheck = layoutUpdates.find(s => s.id === assignedSpotId);
-          if (!spotCheck) return Alert.alert("Invalid Spot", `Spot ${assignedSpotId} does not exist in your layout.`);
-          if (spotCheck.status !== 'FREE') return Alert.alert("Spot Occupied", `Spot ${assignedSpotId} is currently ${spotCheck.status}.`);
+          if (!spotObj) return Alert.alert("Invalid Spot", `Spot ${currentVehicle.spotNumber} does not exist in your layout.`);
+          if (spotObj.status !== 'FREE') return Alert.alert("Spot Occupied", `Spot ${spotObj.label || currentVehicle.spotNumber} is currently ${spotObj.status}.`);
         }
 
         const newTxRef = await addDoc(collection(db, 'transactions'), {
@@ -496,7 +526,7 @@ export default function OwnerDashboard() {
       else if (currentVehicle.status === 'Pending Arrival') {
         if (!assignedSpotId || assignedSpotId === "FULL") return Alert.alert("Spot Issue", "Invalid spot assignment.");
 
-        await updateDoc(doc(db, 'transactions', currentVehicle.id), { status: 'Active', actualArrivalTime: new Date() });
+        await updateDoc(doc(db, 'transactions', currentVehicle.id), { status: 'Active', actualArrivalTime: new Date(), spotNumber: assignedSpotId });
         const spotIndex = layoutUpdates.findIndex((s: any) => s.id === assignedSpotId);
         if (spotIndex !== -1) {
           layoutUpdates[spotIndex] = { ...layoutUpdates[spotIndex], status: 'OCCUPIED', txId: currentVehicle.id, licensePlate: currentVehicle.licensePlate };
@@ -512,7 +542,7 @@ export default function OwnerDashboard() {
         });
         await updateDoc(doc(db, 'parking_lots', lotData.id), { available_spots: Math.min(lotData.capacity_total, lotData.available_spots + 1) });
 
-        const spotIndex = layoutUpdates.findIndex((s: any) => s.id === currentVehicle.spotNumber);
+        const spotIndex = layoutUpdates.findIndex((s: any) => s.id === assignedSpotId);
         if (spotIndex !== -1) {
           const futureTxs = allTransactions.filter(t => t.spotNumber === assignedSpotId && t.status === 'Pending Arrival' && t.id !== currentVehicle.id);
           if (futureTxs.length > 0) {
@@ -1196,7 +1226,7 @@ export default function OwnerDashboard() {
                             <TouchableOpacity 
                               key={v} 
                               style={[styles.fullTypeBtn, walkInVehicleType === v ? styles.typeBtnActive : null]} 
-                              onPress={() => {setWalkInVehicleType(v); setCurrentVehicle({...currentVehicle, spotNumber: findFreeSpot(v)});}}
+                              onPress={() => {setWalkInVehicleType(v); setCurrentVehicle({...currentVehicle, spotNumber: getSpotLabel(findFreeSpot(v))});}}
                             >
                               <Text style={walkInVehicleType === v ? styles.typeTextActive : styles.typeText}>{getVehicleLabel(v)}</Text>
                             </TouchableOpacity>
@@ -1369,7 +1399,7 @@ export default function OwnerDashboard() {
                 <View key={tx.id} style={styles.ledgerItem}>
                   <View style={{flex: 1}}>
                     <Text style={{fontWeight: '900', fontSize: 18, color: '#0f172a'}}>{tx.licensePlate}</Text>
-                    <Text style={{color: '#64748b', fontSize: 12}}>Spot #{tx.spotNumber || 'N/A'} • {tx.finalPaymentMethod || tx.paymentMethod || 'CASH'}</Text>
+                    <Text style={{color: '#64748b', fontSize: 12}}>Spot #{getSpotLabel(tx.spotNumber)} • {tx.finalPaymentMethod || tx.paymentMethod || 'CASH'}</Text>
                     <Text style={{color: tx.status === 'Completed' ? '#64748b' : '#3b82f6', fontSize: 12, fontWeight: 'bold'}}>{tx.status}</Text>
                   </View>
                   <View style={{alignItems: 'flex-end'}}>
