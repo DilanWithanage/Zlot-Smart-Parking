@@ -655,9 +655,16 @@ export default function OwnerDashboard() {
       if (!result.canceled && result.assets[0].base64) {
         setManualPlateInput('Scanning...'); 
         const FREE_API_TOKEN = "c3d1ed1bc0497453bbd916d8cd8022ce748a1eb3"; 
-        const formData = new FormData();
-        formData.append('upload', result.assets[0].base64);
-        const response = await fetch('https://api.platerecognizer.com/v1/plate-reader/', { method: 'POST', headers: { 'Authorization': `Token ${FREE_API_TOKEN}` }, body: formData });
+        const response = await fetch('https://api.platerecognizer.com/v1/plate-reader/', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${FREE_API_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            upload: `data:image/jpeg;base64,${result.assets[0].base64}`
+          })
+        });
         const data = await response.json();
         if (data.results && data.results.length > 0) {
           let cleanPlate = data.results[0].plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
