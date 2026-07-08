@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'; // IMPORTED IMAGE PICKER
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
 // 🔥 CHANGE THIS TO YOUR LAPTOP'S WI-FI IP ADDRESS
-const LOCAL_BACKEND_URL = "http://192.168.10.98:3000"; 
+const LOCAL_BACKEND_URL = "http://10.37.250.1:3000"; 
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);

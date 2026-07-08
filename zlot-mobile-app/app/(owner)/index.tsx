@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import QRCode from 'react-native-qrcode-svg';
 import { Camera, Plus, Minus, LogOut, User, Banknote, ShieldAlert, MapPin, AlertCircle, CreditCard, Menu, LayoutGrid, LayoutDashboard, X, Power, CheckCircle2, Image as ImageIcon, Clock, QrCode as QrCodeIcon, Shield, Mail, Bell } from 'lucide-react-native';
 
-const LOCAL_BACKEND_URL = "http://192.168.10.98:3000"; 
+const LOCAL_BACKEND_URL = "http://10.37.250.1:3000"; 
 
 export default function OwnerDashboard() {
   const [lotData, setLotData] = useState<any>(null);

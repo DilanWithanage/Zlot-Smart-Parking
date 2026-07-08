@@ -20,7 +20,7 @@ import { CreditCard, Banknote, LogOut, Shield, Video, MapPin, Zap, Clock, Naviga
 
 LogBox.ignoreLogs(['expo-notifications: Android Push notifications']);
 
-const LOCAL_ML_URL = "http://192.168.10.98:5000";
+const LOCAL_ML_URL = "http://10.37.250.1:5000";
 
 export default function DriverDashboard() {
   const [lots, setLots] = useState<any[]>([]);
